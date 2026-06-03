@@ -1,173 +1,174 @@
-function novoBloco(tipo) {
-  const def = DEF_BLOCOS[tipo]; if (!def) return null;
-  return { id:'b'+(++contadorId), tipo, valor: def.opcoes?def.opcoes[0]:null };
+
+let workspaceBlockly = null;
+let blocoAtivoBlocklyId = null;
+
+function definirBlocos() {
+  Blockly.Blocks['robot_avancar'] = { init() {
+    this.appendDummyInput().appendField('▶ Frente').appendField(new Blockly.FieldNumber(60,1,500,1),'DISTANCIA').appendField('un');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#4C97FF');
+  }};
+  Blockly.Blocks['robot_recuar'] = { init() {
+    this.appendDummyInput().appendField('◀ Trás').appendField(new Blockly.FieldNumber(60,1,500,1),'DISTANCIA').appendField('un');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#4C97FF');
+  }};
+  Blockly.Blocks['robot_virar_dir'] = { init() {
+    this.appendDummyInput().appendField('↻ Girar Direita').appendField(new Blockly.FieldNumber(90,1,360,1),'GRAUS').appendField('°');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#4C97FF');
+  }};
+  Blockly.Blocks['robot_virar_esq'] = { init() {
+    this.appendDummyInput().appendField('↺ Girar Esquerda').appendField(new Blockly.FieldNumber(90,1,360,1),'GRAUS').appendField('°');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#4C97FF');
+  }};
+  Blockly.Blocks['robot_parar'] = { init() {
+    this.appendDummyInput().appendField('⬛ Parar');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#4C97FF');
+  }};
+  Blockly.Blocks['robot_intake_on'] = { init() {
+    this.appendDummyInput().appendField('⚡ Intake ON');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#FF8000');
+  }};
+  Blockly.Blocks['robot_intake_off'] = { init() {
+    this.appendDummyInput().appendField('○ Intake OFF');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#FF8000');
+  }};
+  Blockly.Blocks['robot_depositar'] = { init() {
+    this.appendDummyInput().appendField('💛 Depositar');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#FF8000');
+  }};
+  Blockly.Blocks['sensor_pollen'] = { init() {
+    this.appendDummyInput().appendField('🌸 pollen próximo?');
+    this.setOutput(true,'Boolean'); this.setColour('#5CB1D6');
+  }};
+  Blockly.Blocks['sensor_parede'] = { init() {
+    this.appendDummyInput().appendField('🧱 parede à frente?');
+    this.setOutput(true,'Boolean'); this.setColour('#5CB1D6');
+  }};
+  Blockly.Blocks['sensor_colmeia'] = { init() {
+    this.appendDummyInput().appendField('🍯 na colmeia?');
+    this.setOutput(true,'Boolean'); this.setColour('#5CB1D6');
+  }};
+  Blockly.Blocks['robot_esperar'] = { init() {
+    this.appendDummyInput().appendField('⏱ Esperar').appendField(new Blockly.FieldNumber(1,0.1,60,0.1),'SEGUNDOS').appendField('s');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour('#FFAB19');
+  }};
 }
 
-function adicionarBloco(tipo) {
-  const b = novoBloco(tipo); if (!b) return;
-  blocos.push(b);
-  renderizarEspaco();
-  Sons.tocar('bloco', 0.6); 
-}
+const TOOLBOX_CONFIG = {
+  kind:'categoryToolbox',
+  contents:[
+    { kind:'category', name:'🚗 Movimento', colour:'#4C97FF', contents:[
+      { kind:'block', type:'robot_avancar' },
+      { kind:'block', type:'robot_recuar' },
+      { kind:'block', type:'robot_virar_dir' },
+      { kind:'block', type:'robot_virar_esq' },
+      { kind:'block', type:'robot_parar' },
+    ]},
+    { kind:'category', name:'🐝 Ações', colour:'#FF8000', contents:[
+      { kind:'block', type:'robot_intake_on' },
+      { kind:'block', type:'robot_intake_off' },
+      { kind:'block', type:'robot_depositar' },
+    ]},
+    { kind:'category', name:'👁 Sensores', colour:'#5CB1D6', contents:[
+      { kind:'block', type:'sensor_pollen' },
+      { kind:'block', type:'sensor_parede' },
+      { kind:'block', type:'sensor_colmeia' },
+    ]},
+    { kind:'category', name:'🔁 Lógica', colour:'#FFAB19', contents:[
+      { kind:'block', type:'controls_repeat_ext',
+        inputs:{ TIMES:{ block:{ type:'math_number', fields:{ NUM:3 } } } } },
+      { kind:'block', type:'controls_if' },
+      { kind:'block', type:'robot_esperar' },
+    ]},
+  ]
+};
 
-function removerBloco(idx) { blocos.splice(idx,1); renderizarEspaco(); }
-
-function moverBloco(idx, dir) {
-  const j=idx+dir; if (j<0||j>=blocos.length) return;
-  [blocos[idx],blocos[j]]=[blocos[j],blocos[idx]]; renderizarEspaco();
-}
-
-function limparEspaco() { blocos=[]; renderizarEspaco(); }
-
-function renderizarEspaco() {
-  const espaco = document.getElementById('espaco-trabalho');
-  Array.from(espaco.children).forEach(el=>{ if(el.id!=='espaco-vazio') el.remove(); });
-  document.getElementById('espaco-vazio').style.display  = blocos.length?'none':'flex';
-  document.getElementById('contador-blocos').textContent = blocos.length+(blocos.length===1?' bloco':' blocos');
-  let recuo=0;
-  blocos.forEach((b,i) => {
-    const def = DEF_BLOCOS[b.tipo]; if (!def) return;
-    if (b.tipo==='fim-repetir') recuo=Math.max(0,recuo-1);
-    const el = _criarElementoBloco(b,def,i,recuo);
-    espaco.appendChild(el);
-    if (b.tipo==='repetir') recuo++;
+function inicializarBlockly() {
+  definirBlocos();
+  workspaceBlockly = Blockly.inject('blockly-div', {
+    toolbox: TOOLBOX_CONFIG,
+    grid: { spacing: 24, colour: '#E2E8F4', snap: true },
+    zoom: { controls: true, wheel: true, startScale: 0.9 },
+    trashcan: true,
+    sounds: false,
+    renderer: 'zelos',
+    theme: Blockly.Theme.defineTheme('biobuzz', {
+      name:'biobuzz',
+      componentStyles:{ workspaceBackgroundColour:'#F9FAFB', toolboxBackgroundColour:'#fff',
+        toolboxForegroundColour:'#333', flyoutBackgroundColour:'#F5F7FA',
+        flyoutForegroundColour:'#333', flyoutOpacity:1,
+        scrollbarColour:'#DDE3ED', insertionMarkerColour:'#4C97FF' }
+    }),
   });
+  workspaceBlockly.addChangeListener(ev => {
+    if (ev.type === Blockly.Events.BLOCK_CREATE) Sons.tocar('bloco', 0.6);
+    const n = workspaceBlockly.getAllBlocks(false).length;
+    const el = document.getElementById('contador-blocos');
+    if (el) el.textContent = n + (n===1?' bloco':' blocos');
+  });
+  // Redimensiona quando a janela muda
+  window.addEventListener('resize', () => Blockly.svgResize(workspaceBlockly));
 }
 
-function _criarElementoBloco(bloco, def, idx, recuo) {
-  const el = document.createElement('div');
-  el.className = ['bloco-espaco', def.categoria,
-    bloco.tipo==='repetir'?'abre-repeticao':'',
-    bloco.tipo==='fim-repetir'?'fecha-repeticao':'',
-    idx===blocoAtivoIdx?'ativo':'',
-  ].filter(Boolean).join(' ');
-  el.dataset.idx = idx;
-  el.draggable   = true;
-  el.style.marginLeft = (recuo*14)+'px';
+function limparEspaco() {
+  if (workspaceBlockly) workspaceBlockly.clear();
+}
 
-  const su=document.createElement('button'); su.className='btn-mover-bloco'; su.textContent='▲'; su.title='Mover para cima';    su.onclick=e=>{e.stopPropagation();moverBloco(idx,-1);};
-  const sd=document.createElement('button'); sd.className='btn-mover-bloco'; sd.textContent='▼'; sd.title='Mover para baixo'; sd.onclick=e=>{e.stopPropagation();moverBloco(idx,1);};
-  el.append(su,sd);
+function aplicarSolucao() {
+  if (!workspaceBlockly) return;
+  workspaceBlockly.clear();
+  const xml = _gerarXML(SOLUCOES[faseAtual]);
+  try {
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xml), workspaceBlockly);
+  } catch(e) { console.error('Erro ao carregar solução:', e); }
+  solicitarParada=true; cmdMover=null; cmdGirar=null;
+  setTimeout(()=>reiniciarRobo(), 60);
+  document.getElementById('modal-solucao').classList.remove('visivel');
+}
 
-  const notch=document.createElement('span'); notch.className='notch-espaco'; el.appendChild(notch);
-
-  const label=document.createElement('span');
-  label.className='label-bloco';
-  label.textContent=def.rotulo;
-  label.title='Clique para mudar tipo de bloco';
-  label.style.cursor='pointer';
-  label.onclick=e=>{e.stopPropagation(); abrirSeletorTipo(bloco,idx,el);};
-  el.appendChild(label);
-
-  if (def.chaveParam && def.opcoes) {
-    const inp=document.createElement('input');
-    inp.type='number'; inp.className='input-bloco';
-    inp.min=def.opcoes[0]; inp.max=def.opcoes[def.opcoes.length-1];
-    inp.step=def.opcoes.length>1?def.opcoes[1]-def.opcoes[0]:1;
-    inp.value=bloco.valor??def.opcoes[0];
-    inp.title=def.chaveParam+' ('+def.unidade+')';
-    inp.onchange=e=>{
-      const v=parseFloat(e.target.value);
-      bloco.valor=isNaN(v)?def.opcoes[0]:Math.min(inp.max,Math.max(inp.min,v));
-      inp.value=bloco.valor;
-    };
-    inp.onclick=e=>e.stopPropagation();
-    const unit=document.createElement('span'); unit.className='unit-bloco'; unit.textContent=def.unidade||'';
-    el.append(inp,unit);
-  }
-
-  const del=document.createElement('button'); del.className='btn-remover-bloco'; del.innerHTML='&times;';
-  del.onclick=e=>{e.stopPropagation();removerBloco(idx);}; el.appendChild(del);
-
-  el.ondragstart=e=>{
-    idxDrag=idx;
-    e.dataTransfer.setData('text','espaco');
-    setTimeout(()=>el.classList.add('arrastando'),0);
-  };
-  el.ondragend=()=>{
-    el.classList.remove('arrastando');
-    document.querySelectorAll('.bloco-espaco').forEach(b=>b.classList.remove('drop-acima','drop-abaixo'));
-    idxDrag=null;
-  };
-  el.ondragover=e=>{
-    e.preventDefault();
-    if (idxDrag===null||idxDrag===idx) return;
-    document.querySelectorAll('.bloco-espaco').forEach(b=>b.classList.remove('drop-acima','drop-abaixo'));
-    const meio=el.getBoundingClientRect().top+el.offsetHeight/2;
-    el.classList.add(e.clientY<meio?'drop-acima':'drop-abaixo');
-  };
-  el.ondragleave=()=>el.classList.remove('drop-acima','drop-abaixo');
-  el.ondrop=e=>{
-    e.preventDefault();
-    el.classList.remove('drop-acima','drop-abaixo');
-    if (e.dataTransfer.getData('text')==='espaco' && idxDrag!==null && idxDrag!==idx) {
-      const meio=el.getBoundingClientRect().top+el.offsetHeight/2;
-      const insertAfter=e.clientY>=meio;
-      const [mv]=blocos.splice(idxDrag,1);
-      const newIdx=blocos.indexOf(blocos[idx-(idxDrag<idx?1:0)]);
-      const target=idx-(idxDrag<idx?1:0)+(insertAfter?1:0);
-      blocos.splice(Math.max(0,Math.min(blocos.length,target)),0,mv);
-      idxDrag=null;
-      renderizarEspaco();
+function _gerarXML(sol) {
+  function chain(items) {
+    if (!items || !items.length) return '';
+    const [b, ...resto] = items;
+    if (b.tipo==='fim-repetir') return chain(resto);
+    if (b.tipo==='repetir') {
+      let d=1,i=0;
+      while(i<resto.length&&d>0){if(resto[i].tipo==='repetir')d++;if(resto[i].tipo==='fim-repetir')d--;if(d>0)i++;}
+      const inn=chain(resto.slice(0,i)), ap=chain(resto.slice(i+1));
+      return `<block type="controls_repeat_ext"><value name="TIMES"><block type="math_number"><field name="NUM">${b.valor||3}</field></block></value><statement name="DO">${inn}</statement>${ap?`<next>${ap}</next>`:''}</block>`;
     }
-  };
-
-  return el;
+    const SM={'se-pollen-proximo':'sensor_pollen','se-parede-proxima':'sensor_parede','se-na-colmeia':'sensor_colmeia'};
+    if (SM[b.tipo]) {
+      const doB=chain([resto[0]]), ap=chain(resto.slice(1));
+      return `<block type="controls_if"><value name="IF0"><block type="${SM[b.tipo]}"></block></value><statement name="DO0">${doB}</statement>${ap?`<next>${ap}</next>`:''}</block>`;
+    }
+    const TM={
+      'avancar':['robot_avancar',`<field name="DISTANCIA">${b.valor||60}</field>`],
+      'recuar':['robot_recuar',`<field name="DISTANCIA">${b.valor||60}</field>`],
+      'virar-direita':['robot_virar_dir',`<field name="GRAUS">${b.valor||90}</field>`],
+      'virar-esquerda':['robot_virar_esq',`<field name="GRAUS">${b.valor||90}</field>`],
+      'parar':['robot_parar',''],'intake-ligar':['robot_intake_on',''],
+      'intake-desligar':['robot_intake_off',''],'depositar':['robot_depositar',''],
+      'esperar':['robot_esperar',`<field name="SEGUNDOS">${b.valor||1}</field>`],
+    };
+    const e=TM[b.tipo]; if(!e) return chain(resto);
+    const ap=chain(resto);
+    return `<block type="${e[0]}">${e[1]}${ap?`<next>${ap}</next>`:''}</block>`;
+  }
+  const c = chain(sol);
+  if (!c) return '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+  const first = c.replace(/^<block /, '<block x="30" y="30" ');
+  return `<xml xmlns="https://developers.google.com/blockly/xml">${first}</xml>`;
 }
 
-let _seletorAberto = null;
-
-function abrirSeletorTipo(bloco, idx, elRef) {
-  fecharSeletorTipo();
-  const popup = document.createElement('div');
-  popup.id = 'seletor-tipo';
-  popup.className = 'seletor-tipo-popup';
-
-  const titulo = document.createElement('div');
-  titulo.className = 'seletor-titulo'; titulo.textContent = '↕ Mudar tipo de bloco:';
-  popup.appendChild(titulo);
-
-  const cats = {};
-  Object.entries(DEF_BLOCOS).forEach(([tipo,d])=>{
-    if(!cats[d.categoria]) cats[d.categoria]={};
-    cats[d.categoria][tipo]=d;
+function revelarSolucao() {
+  const pv=document.getElementById('previa-mini-blocos');
+  pv.innerHTML='';
+  SOLUCOES[faseAtual].forEach(b=>{
+    const def=DEF_BLOCOS[b.tipo]; if(!def) return;
+    const m=document.createElement('span');
+    m.className=`mini-bloco ${def.categoria}`;
+    m.textContent=def.rotulo+(b.valor!=null?` ${b.valor}`:''  );
+    pv.appendChild(m);
   });
-
-  const nomeCat={'movimento':'🚗 Movimento','acao':'🐝 Ações','sensor':'👁 Sensores','logica':'🔁 Lógica'};
-  Object.entries(cats).forEach(([cat,tipos])=>{
-    const sec=document.createElement('div'); sec.className='seletor-sec';
-    const lbl=document.createElement('div'); lbl.className='seletor-sec-lbl'; lbl.textContent=nomeCat[cat]||cat;
-    sec.appendChild(lbl);
-    Object.entries(tipos).forEach(([tipo,d])=>{
-      const btn=document.createElement('button');
-      btn.className='seletor-opt '+cat+(tipo===bloco.tipo?' seletor-ativo':'');
-      btn.textContent=d.rotulo;
-      btn.onclick=e=>{
-        e.stopPropagation();
-        bloco.tipo=tipo;
-        bloco.valor=d.opcoes?d.opcoes[0]:null;
-        fecharSeletorTipo();
-        renderizarEspaco();
-      };
-      sec.appendChild(btn);
-    });
-    popup.appendChild(sec);
-  });
-
-  document.body.appendChild(popup);
-  _seletorAberto=popup;
-
-  const r=elRef.getBoundingClientRect();
-  popup.style.left=Math.min(r.left,window.innerWidth-220)+'px';
-  popup.style.top=(r.bottom+4)+'px';
-
-  setTimeout(()=>document.addEventListener('click',fecharSeletorTipo,{once:true}),10);
-}
-
-function fecharSeletorTipo() {
-  if (_seletorAberto) { _seletorAberto.remove(); _seletorAberto=null; }
-}
-
-function destacarBloco() {
-  document.querySelectorAll('.bloco-espaco').forEach((el,i)=>el.classList.toggle('ativo',i===blocoAtivoIdx));
+  document.getElementById('modal-solucao').classList.add('visivel');
 }

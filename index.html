@@ -7,10 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/estilos.css">
+  <script src="https://unpkg.com/blockly@10.4.3/blockly_compressed.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/blocks_compressed.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/msg/pt-br.js"></script>
 </head>
 <body>
 
-<!-- FIX #7 — VÍDEO INTRO -->
 <div id="video-overlay">
   <video id="intro-video" autoplay playsinline muted>
     <source src="assets/video/intro.mp4" type="video/mp4">
@@ -21,7 +23,6 @@
 
 <div id="aplicacao">
 
-  <!-- BARRA SUPERIOR -->
   <div id="barra-topo">
     <div class="logo-area">
       <div class="logo-emoji">🐝</div>
@@ -48,56 +49,14 @@
     </div>
   </div>
 
-  <!-- LAYOUT PRINCIPAL -->
   <div id="principal">
 
-    <!-- CAIXA DE BLOCOS -->
-    <div id="caixa-blocos">
-      <div class="cabecalho-caixa">
-        <div class="titulo-caixa">Categorias</div>
-        <div class="pilulas-categoria">
-          <div class="pilula-categoria movimento ativa" data-cat="movimento">🚗 Mover</div>
-          <div class="pilula-categoria acao"            data-cat="acao">🐝 Ações</div>
-          <div class="pilula-categoria sensor"          data-cat="sensor">👁 Sensor</div>
-          <div class="pilula-categoria logica"          data-cat="logica">🔁 Lógica</div>
-        </div>
-      </div>
-      <div id="lista-blocos">
-        <div class="secao-categoria" id="sec-movimento">
-          <div class="rotulo-secao">🚗 Movimento</div>
-          <button class="bloco-caixa movimento" data-tipo="avancar"><span class="entalhe-bloco"></span>▶ Andar Frente</button>
-          <button class="bloco-caixa movimento" data-tipo="recuar"><span class="entalhe-bloco"></span>◀ Andar Trás</button>
-          <button class="bloco-caixa movimento" data-tipo="virar-direita"><span class="entalhe-bloco"></span>↻ Girar Direita</button>
-          <button class="bloco-caixa movimento" data-tipo="virar-esquerda"><span class="entalhe-bloco"></span>↺ Girar Esquerda</button>
-          <button class="bloco-caixa movimento" data-tipo="parar"><span class="entalhe-bloco"></span>⬛ Parar</button>
-        </div>
-        <div class="secao-categoria" id="sec-acao">
-          <div class="rotulo-secao">🐝 Ações BIOBUZZ</div>
-          <button class="bloco-caixa acao" data-tipo="intake-ligar"><span class="entalhe-bloco"></span>⚡ Intake ON</button>
-          <button class="bloco-caixa acao" data-tipo="intake-desligar"><span class="entalhe-bloco"></span>○ Intake OFF</button>
-          <button class="bloco-caixa acao" data-tipo="depositar"><span class="entalhe-bloco"></span>💛 Depositar</button>
-        </div>
-        <div class="secao-categoria" id="sec-sensor">
-          <div class="rotulo-secao">👁 Sensores</div>
-          <button class="bloco-caixa sensor" data-tipo="se-pollen-proximo"><span class="entalhe-bloco"></span>? Se Pollen Próximo →</button>
-          <button class="bloco-caixa sensor" data-tipo="se-parede-proxima"><span class="entalhe-bloco"></span>? Se Parede Próxima →</button>
-          <button class="bloco-caixa sensor" data-tipo="se-na-colmeia"><span class="entalhe-bloco"></span>? Se Na Colmeia →</button>
-        </div>
-        <div class="secao-categoria" id="sec-logica">
-          <div class="rotulo-secao">🔁 Lógica</div>
-          <button class="bloco-caixa logica" data-tipo="repetir"><span class="entalhe-bloco"></span>↺ Repetir {</button>
-          <button class="bloco-caixa logica" data-tipo="fim-repetir"><span class="entalhe-bloco"></span>} Fim Repetir</button>
-          <button class="bloco-caixa logica" data-tipo="esperar"><span class="entalhe-bloco"></span>⏱ Esperar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ÁREA DE PROGRAMAÇÃO -->
-    <div id="area-programa">
+    <!-- EDITOR BLOCKLY -->
+    <div id="area-blockly">
       <div id="barra-programa">
-        <button class="btn-controle-redondo" id="btn-executar" title="Executar programa (RUN)">▶</button>
-        <button class="btn-controle-redondo" id="btn-parar"    title="Parar e resetar">⬛</button>
-        <button class="btn-controle-redondo" id="btn-passo"    title="Executar passo a passo (STEP)">⏭</button>
+        <button class="btn-controle-redondo" id="btn-executar" title="Executar (RUN)">▶</button>
+        <button class="btn-controle-redondo" id="btn-parar"    title="Parar / Resetar">⬛</button>
+        <button class="btn-controle-redondo" id="btn-passo"    title="Passo a passo">⏭</button>
         <div class="divisor-controle"></div>
         <div class="status-programa" id="status-programa">⚪ Parado</div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
@@ -108,19 +67,10 @@
           <button class="btn-limpar" onclick="limparEspaco()">🗑 Limpar</button>
         </div>
       </div>
-      <div id="espaco-trabalho">
-        <div id="espaco-vazio">
-          <div class="caixa-vazia">
-            <div class="icone-vazio">🤖</div>
-            <div class="titulo-vazio">Área de programação</div>
-            <div class="subtitulo-vazio">Clique nos blocos ao lado para adicionar</div>
-            <div class="subtitulo-vazio" style="margin-top:3px">Clique no nome do bloco para mudar o tipo</div>
-          </div>
-        </div>
-      </div>
+      <div id="blockly-div"></div>
     </div>
 
-    <!-- ÁREA DE SIMULAÇÃO -->
+    <!-- SIMULAÇÃO -->
     <div id="area-simulacao">
       <div id="cabecalho-simulacao">
         <div class="linha-topo-sim">
@@ -138,41 +88,40 @@
         <canvas id="canvas-jogo" width="370" height="340"></canvas>
       </div>
 
-      <!-- Tela de Introdução -->
       <div id="tela-intro" class="visivel">
         <div id="cartao-intro">
           <div class="numero-fase"    id="intro-numero">FASE 1 DE 5</div>
           <div class="titulo-fase"    id="intro-titulo">PRIMEIRO VOO 🐝</div>
           <p   class="descricao-fase" id="intro-descricao">Mova o robô até o pollen e entregue na colmeia!</p>
-          <div class="objetivo-fase"  id="intro-objetivo"><strong>🎯 Objetivo:</strong> Ative o intake, avance e deposite.</div>
-          <div class="dica-fase"      id="intro-dica">💡 Intake ON → Frente 60cm → Depositar</div>
+          <div class="objetivo-fase"  id="intro-objetivo"><strong>🎯 Objetivo:</strong> ...</div>
+          <div class="dica-fase"      id="intro-dica">💡 ...</div>
           <button class="btn-comecar" id="btn-comecar-fase">Começar! ▶</button>
         </div>
       </div>
 
-      <!-- Tela de Resultado -->
       <div id="tela-resultado">
         <div id="cartao-resultado">
           <h2 id="resultado-titulo">🎯 Missão Completa!</h2>
-          <div class="nome-fase-resultado" id="resultado-nome-fase">Fase 1 — Primeiro Voo</div>
+          <div class="nome-fase-resultado" id="resultado-nome-fase"></div>
           <div class="grade-stats">
             <div class="caixa-stat"><div class="rotulo-stat">Pollen</div><div class="valor-stat" id="resultado-polens">0/1</div></div>
             <div class="caixa-stat"><div class="rotulo-stat">Tempo</div><div class="valor-stat"  id="resultado-tempo">0.0s</div></div>
             <div class="caixa-stat"><div class="rotulo-stat">Colisões</div><div class="valor-stat" id="resultado-colisoes">0</div></div>
             <div class="caixa-stat"><div class="rotulo-stat">Pontos</div><div class="valor-stat destaque" id="resultado-pontos">0</div></div>
           </div>
-          <div class="mensagem-resultado" id="resultado-mensagem">Ótimo trabalho!</div>
+          <div class="mensagem-resultado" id="resultado-mensagem"></div>
           <div class="botoes-resultado">
             <button class="btn-resultado btn-tentar-novamente" id="btn-tentar-novamente">↺ Tentar Novamente</button>
             <button class="btn-resultado btn-proxima-fase"     id="btn-proxima-fase">Próxima Fase ▶</button>
           </div>
         </div>
       </div>
-    </div><!-- /area-simulacao -->
-  </div><!-- /principal -->
-</div><!-- /aplicacao -->
+    </div>
 
-<!-- POPUP DE DICA -->
+  </div>
+</div>
+
+<!-- POPUP DICA -->
 <div id="popup-dica">
   <div class="seta-popup"></div>
   <div class="cabecalho-dica">
@@ -183,14 +132,14 @@
   <div class="codigo-dica" id="popup-codigo-dica"></div>
 </div>
 
-<!-- MODAL DE SOLUÇÃO -->
+<!-- MODAL SOLUÇÃO -->
 <div id="modal-solucao">
   <div id="cartao-solucao">
     <div class="icone-solucao">👁</div>
     <div class="titulo-solucao">Ver a Solução?</div>
-    <div class="descricao-solucao">Isso vai <strong>substituir seu programa</strong> pela solução da fase.<br>Você ainda poderá editar os blocos depois.</div>
+    <div class="descricao-solucao">Isso vai <strong>substituir seu programa</strong> pela solução da fase.</div>
     <div class="previa-solucao">
-      <div class="rotulo-previa">Pré-visualização dos blocos</div>
+      <div class="rotulo-previa">Pré-visualização</div>
       <div class="miniblocos-previa" id="previa-mini-blocos"></div>
     </div>
     <div class="botoes-modal">
@@ -200,7 +149,6 @@
   </div>
 </div>
 
-<!-- SCRIPTS (ordem de dependência) -->
 <script src="js/constantes.js"></script>
 <script src="js/estado.js"></script>
 <script src="js/sons.js"></script>

@@ -1,108 +1,83 @@
-function moverRobo(distancia, direcao) {
-  return new Promise(res => { cmdMover = { restante: distancia*2.6, direcao, resolver: res }; });
-}
-function girarRobo(graus, direcao) {
-  return new Promise(res => { cmdGirar = { restante: Math.abs(graus), direcao, resolver: res }; });
-}
-function aguardar(seg) {
-  return new Promise(res => setTimeout(res, seg*1000));
-}
 
-function aguardarPasso() {
-  return new Promise(res => {
-    resolverStep   = res;
-    aguardandoPasso = true;
-    _atualizarVisualStep(true);
+function moverRobo(dist,dir){return new Promise(res=>{cmdMover={restante:dist*2.6,direcao:dir,resolver:res};});}
+function girarRobo(graus,dir){return new Promise(res=>{cmdGirar={restante:Math.abs(graus),direcao:dir,resolver:res};});}
+function aguardar(s){return new Promise(res=>setTimeout(res,s*1000));}
+
+function aguardarPasso(){
+  return new Promise(res=>{
+    resolverStep=res; aguardandoPasso=true;
+    const btn=document.getElementById('btn-passo');
+    if(btn){btn.style.background='#4C97FF';btn.style.color='#fff';btn.style.borderColor='#4C97FF';btn.textContent='⏭ AVANÇAR';btn.disabled=false;}
   });
 }
-function _atualizarVisualStep(esperando) {
-  const btn = document.getElementById('btn-passo');
-  if (!btn) return;
-  if (esperando) {
-    btn.style.background    = '#4C97FF';
-    btn.style.color         = '#fff';
-    btn.style.borderColor   = '#4C97FF';
-    btn.textContent         = '⏭ AVANÇAR';
-    btn.disabled            = false;
-  } else {
-    btn.style.background  = '';
-    btn.style.color       = '';
-    btn.style.borderColor = '';
-    btn.textContent       = '⏭';
+function _resetStep(){
+  aguardandoPasso=false;
+  const btn=document.getElementById('btn-passo');
+  if(btn){btn.style.background='';btn.style.color='';btn.style.borderColor='';btn.textContent='⏭';}
+}
+
+async function avaliarCondicao(bloco){
+  if(!bloco) return false;
+  switch(bloco.type){
+    case 'sensor_pollen':  return pollenProximo();
+    case 'sensor_parede':  return paredeProxima();
+    case 'sensor_colmeia': return naColmeia();
+    default: return false;
   }
 }
 
-async function executarBloco(bloco) {
-  if (solicitarParada) return;
-  switch (bloco.tipo) {
-    case 'avancar':         await moverRobo(bloco.valor||60,  1); break;
-    case 'recuar':          await moverRobo(bloco.valor||60, -1); break;
-    case 'virar-direita':   await girarRobo(bloco.valor||90,  1); break;
-    case 'virar-esquerda':  await girarRobo(bloco.valor||90, -1); break;
-    case 'parar':           await aguardar(.12); break;
-    case 'intake-ligar':    robo.intakeAtivo=true;  await aguardar(.08); break;
-    case 'intake-desligar': robo.intakeAtivo=false; await aguardar(.08); break;
-    case 'depositar':
-      if (naColmeia() && robo.polens>0) { depositado+=robo.polens; robo.polens=0; }
+async function executarArvore(bloco){
+  if(!bloco||solicitarParada) return;
+  blocoAtivoBlocklyId=bloco.id;
+  if(workspaceBlockly) workspaceBlockly.highlightBlock(bloco.id);
+  if(modoStep){ await aguardarPasso(); if(solicitarParada) return; }
+
+  switch(bloco.type){
+    case 'robot_avancar':    await moverRobo(parseFloat(bloco.getFieldValue('DISTANCIA')||60),1);  break;
+    case 'robot_recuar':     await moverRobo(parseFloat(bloco.getFieldValue('DISTANCIA')||60),-1); break;
+    case 'robot_virar_dir':  await girarRobo(parseFloat(bloco.getFieldValue('GRAUS')||90),1);     break;
+    case 'robot_virar_esq':  await girarRobo(parseFloat(bloco.getFieldValue('GRAUS')||90),-1);    break;
+    case 'robot_parar':      await aguardar(.12); break;
+    case 'robot_intake_on':  robo.intakeAtivo=true;  await aguardar(.08); break;
+    case 'robot_intake_off': robo.intakeAtivo=false; await aguardar(.08); break;
+    case 'robot_depositar':
+      if(naColmeia()&&robo.polens>0){depositado+=robo.polens;robo.polens=0;}
       await aguardar(.2); break;
-    case 'esperar':         await aguardar(bloco.valor||1); break;
-  }
-}
-
-async function executarLista(lista, prof) {
-  if (prof>15) return;
-  let i=0;
-  while (i<lista.length && !solicitarParada) {
-    const b = lista[i];
-    blocoAtivoIdx = blocos.indexOf(b);
-    destacarBloco();
-
-    if (b.tipo==='se-pollen-proximo') { if (!pollenProximo()) i++; i++; continue; }
-    if (b.tipo==='se-parede-proxima') { if (!paredeProxima()) i++; i++; continue; }
-    if (b.tipo==='se-na-colmeia')     { if (!naColmeia())     i++; i++; continue; }
-
-    if (b.tipo==='repetir') {
-      const vezes=b.valor||3; let p2=1,j=i+1;
-      while (j<lista.length && p2>0) {
-        if (lista[j].tipo==='repetir')    p2++;
-        if (lista[j].tipo==='fim-repetir') p2--;
-        if (p2>0) j++;
-      }
-      const inner=lista.slice(i+1,j);
-      for (let r=0;r<vezes&&!solicitarParada;r++) await executarLista(inner,prof+1);
-      i=j+1; continue;
+    case 'robot_esperar':    await aguardar(parseFloat(bloco.getFieldValue('SEGUNDOS')||1)); break;
+    case 'controls_repeat_ext':{
+      const tb=bloco.getInputTargetBlock('TIMES');
+      const v=tb?parseInt(tb.getFieldValue('NUM'))||3:3;
+      for(let i=0;i<v&&!solicitarParada;i++) await executarArvore(bloco.getInputTargetBlock('DO'));
+      break;
     }
-    if (b.tipo==='fim-repetir') { i++; continue; }
-
-    if (modoStep) await aguardarPasso();
-    if (solicitarParada) break;
-
-    await executarBloco(b);
-    i++;
+    case 'controls_if':{
+      const cond=bloco.getInputTargetBlock('IF0');
+      if(await avaliarCondicao(cond)&&!solicitarParada)
+        await executarArvore(bloco.getInputTargetBlock('DO0'));
+      if(!await avaliarCondicao(cond)&&bloco.elseCount_&&!solicitarParada)
+        await executarArvore(bloco.getInputTargetBlock('ELSE'));
+      break;
+    }
   }
+  if(!solicitarParada) await executarArvore(bloco.getNextBlock());
 }
 
-async function executarPrograma() {
-  
-  if (!faseIniciada) {
-    definirStatus('', '⚠ Clique em "Começar!" primeiro');
-    return;
-  }
+async function executarPrograma(){
+  if(!faseIniciada){definirStatus('','⚠ Clique em "Começar!" primeiro');return;}
+  if(!workspaceBlockly) return;
+  const tops=workspaceBlockly.getTopBlocks(true);
+  if(!tops.length){definirStatus('','⚠ Adicione blocos no editor');return;}
   solicitarParada=false; estadoExecucao='executando';
   robo.colisoes=0; depositado=0; tempoDecorrido=0;
-  atualizarControles();
-  definirStatus('executando','🟢 Executando...');
+  atualizarControles(); definirStatus('executando','🟢 Executando...');
   const t0=performance.now();
-  await executarLista(blocos,0);
+  for(const b of tops){ if(solicitarParada) break; await executarArvore(b); }
   tempoExecucao=(performance.now()-t0)/1000;
-  aguardandoPasso=false;
-  _atualizarVisualStep(false);
-  if (!solicitarParada) {
-    estadoExecucao='concluido'; blocoAtivoIdx=-1;
-    destacarBloco(); atualizarControles();
-    definirStatus('concluido','🔵 Concluído');
-    mostrarResultado();
-  } else {
-    definirStatus('','⚪ Parado');
-  }
+  blocoAtivoBlocklyId=null;
+  if(workspaceBlockly) workspaceBlockly.highlightBlock(null);
+  _resetStep();
+  if(!solicitarParada){
+    estadoExecucao='concluido'; atualizarControles();
+    definirStatus('concluido','🔵 Concluído'); mostrarResultado();
+  } else { definirStatus('','⚪ Parado'); }
 }
