@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FTC BIOBUZZ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="https://unpkg.com/blockly@10.4.3/blockly_compressed.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/blocks_compressed.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/msg/pt-br.js"></script>
+</head>
+<body>
+
+<div id="video-overlay">
+  <video id="intro-video" autoplay playsinline muted>
+    <source src="assets/video/intro.mp4" type="video/mp4">
+  </video>
+  <button id="btn-pular-video">Pular ▶</button>
+  <div id="video-pulso">🐝 Clique para pular</div>
+</div>
+
+<div id="aplicacao">
+
+  <div id="barra-topo">
+    <div class="logo-area">
+      <div class="logo-emoji">🐝</div>
+      <div>
+        <div class="logo-titulo">FTC BIOBUZZ</div>
+        <div class="logo-subtitulo">SIMULADOR DE ROBÓTICA 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="principal">
+    <div id="area-blockly">
+      <div id="barra-programa">
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+          <span id="contador-blocos">0 blocos</span>
+          <button class="btn-limpar" onclick="limparEspaco()">🗑 Limpar</button>
+        </div>
+      </div>
+      <div id="blockly-div"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/sons.js"></script>
+<script src="js/blocos.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
